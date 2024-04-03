@@ -1,0 +1,2 @@
+dspy_ai==2.4.0
+weaviate_client==3.26.2
