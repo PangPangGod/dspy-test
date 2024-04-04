@@ -1,2 +1,4 @@
+import datetime
+
 print("Hello World!")
-print("Docker Test Complete. 240402.")
+print(f"Docker Test Complete. {datetime.datetime.now()}")
