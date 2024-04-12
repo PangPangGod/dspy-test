@@ -11,7 +11,7 @@ s = UnstructuredClient(
     api_key_auth="",
 )
 
-filename = ""  # 전송할 파일의 경로
+filename = "dockerstest/pdf/sample_file.pdf"  # 전송할 파일의 경로
 
 with open(filename, "rb") as f:
     files = shared.Files(
@@ -24,6 +24,7 @@ req = shared.PartitionParameters(
     chunking_strategy="by_title",
     strategy='hi_res',
     split_pdf_page=True,
+    coordinates=True,
 )
 
 try:
