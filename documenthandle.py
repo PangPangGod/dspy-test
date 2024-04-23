@@ -79,7 +79,7 @@ if __name__ == "__main__":
     import time
     start_time = time.time()
 
-    document_handler = PDFHandler(filename="multi-column.pdf")
+    document_handler = PDFHandler(filename="example/multi-column.pdf")
     response = document_handler.load_cache()
 
     if not response:
