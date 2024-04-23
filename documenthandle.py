@@ -43,7 +43,7 @@ class PDFHandler(BaseDocument):
         )
         """ Get client from local only for docker env ........ 
             Using
-            docker run -p 8000:8000 -d --rm --name unstructured-api -e downloads.unstructured.io/unstructured-io/unstructured-api:latest --port 8000 --host 0.0.0.0
+            docker run -p 8000:8000 -d --rm --name unstructured-api -e UNSTRUCTURED_PARALLEL_MODE_THREADS=3 downloads.unstructured.io/unstructured-io/unstructured-api:latest --port 8000 --host 0.0.0.0
         """
 
         return client
@@ -69,17 +69,27 @@ class PDFHandler(BaseDocument):
         try:
             response = client.general.partition(req)
             print("Handled results :", len(response.elements))
+            return response
+
         except Exception as e:
             print("Exception :", e)
 
-        return response
     
 if __name__ == "__main__":
-    document_handler = PDFHandler(filename="example/multi-column.pdf")
+    import time
+    start_time = time.time()
+
+    document_handler = PDFHandler(filename="multi-column.pdf")
     response = document_handler.load_cache()
 
     if not response:
         response = document_handler.process_document()
         document_handler.save_to_cache(data=response)
 
+    print(type(response)) # 'unstructured_client.models.operations.partition.PartitionResponse'
     print("Execution Complete.")
+
+    end_time = time.time()
+    print(f"Elapsed time: {end_time - start_time} seconds")
+
+
