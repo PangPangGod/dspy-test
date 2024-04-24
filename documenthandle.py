@@ -4,19 +4,22 @@ from unstructured_client import UnstructuredClient
 from unstructured_client.models import shared
 from abc import ABC, abstractmethod
 
-class BaseDocument(ABC):
-    def __init__(self, filename, cache_dir="pkl"):
-        self.filename = filename
-        self.cache_dir = cache_dir
-        self.cache_path = self._make_cache_path()
+from pydantic import BaseModel, Field
+import os
+import pickle
 
-    def _make_cache_path(self):
-        """Return cache file full dir."""
+class BaseDocument(BaseModel, ABC):
+    filename: str
+    cache_dir: str = "pkl"
+
+    @property
+    def cache_path(self) -> str:
+        """Dynamically generate and return the full directory path for the cache file."""
         base_filename = os.path.splitext(os.path.basename(self.filename))[0] + '.pkl'
         return os.path.join(self.cache_dir, base_filename)
 
     def load_cache(self):
-        """Load Data from cache file if exsists."""
+        """Load data from the cache file if it exists."""
         if os.path.exists(self.cache_path):
             with open(self.cache_path, 'rb') as file:
                 print(f"Loading cached data from {self.cache_path}")
@@ -24,7 +27,7 @@ class BaseDocument(ABC):
         return None
 
     def save_to_cache(self, data):
-        """Save data to specific dir.."""
+        """Save data to a specified directory, creating the directory if it does not exist."""
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
         with open(self.cache_path, 'wb') as file:

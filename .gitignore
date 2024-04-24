@@ -1,5 +1,7 @@
 *.log
 
+__pycache__
+
 furniture_example
 blog
 pdf

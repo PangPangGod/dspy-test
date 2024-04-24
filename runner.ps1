@@ -9,7 +9,7 @@ if (Test-Path $dockerDesktopPath) {
 }
 
 Write-Host "Waiting for Docker service to start..."
-Start-Sleep -Seconds 5
+Start-Sleep -Seconds 10
 
 ### docker image execution
 docker run -p 8000:8000 -d --rm --name unstructured-api -e UNSTRUCTURED_PARALLEL_MODE_THREADS=3 downloads.unstructured.io/unstructured-io/unstructured-api:latest --port 8000 --host 0.0.0.0
