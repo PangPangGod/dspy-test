@@ -3,10 +3,7 @@ import pickle
 from unstructured_client import UnstructuredClient
 from unstructured_client.models import shared
 from abc import ABC, abstractmethod
-
 from pydantic import BaseModel, Field
-import os
-import pickle
 
 class BaseDocument(BaseModel, ABC):
     filename: str
