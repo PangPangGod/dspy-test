@@ -9,6 +9,7 @@ from langchain_openai.chat_models import ChatOpenAI
 from typing import Any, List
 import time
 import os
+
 start_time = time.time()
 
 file_name = "example/sample_file.pdf"
