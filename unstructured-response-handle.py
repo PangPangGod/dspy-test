@@ -8,10 +8,20 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai.chat_models import ChatOpenAI
 from typing import Any, List
 import time
+import os
 start_time = time.time()
 
-document_handler = PDFHandler(filename="example/multi-column.pdf")
+file_name = "example/sample_file.pdf"
+document_handler = PDFHandler(filename=file_name)
+
 response = document_handler.load_cache()
+
+file_name_seperated = os.path.splitext(os.path.basename(file_name))[0]
+### result table summary cache handle
+context_result_file_path = f"pkl/{file_name_seperated}_context.pkl"
+langchain_result_file_path = f"pkl/{file_name_seperated}_langchain_summary_results.pkl"
+dspy_result_file_path = f"pkl/{file_name_seperated}_dspy_summary_results.pkl"
+###
 
 if not response:
     response = document_handler.process_document()
@@ -75,6 +85,22 @@ for doc in docs:
 ###
 
 
+######### dspyconfig
+
+import dspy
+import re
+
+llm = dspy.OpenAI(model='gpt-3.5-turbo')
+dspy.settings.configure(lm=llm)
+
+# 모델 Signature 정의
+class BasicTableSummarize(dspy.Signature):
+    """Summarize the given text. The text includes the contents of a table. Save this in a detailed information within."""
+    text = dspy.InputField(desc="full text to summarize")
+    summary = dspy.OutputField(desc="summarized text")
+
+##########
+
 def _calculate_similarity_through_chunks(text_element, embedded_table:List[float], threshold:float=0.5):
     """ Table Element 전체와 Text Element를 chunk 한 문장들과의 cosine 유사도를 구해서 threshold 이상이면 연관성이 존재한다고 판단, 더해준 다음 SummaryAgent에 전달 후 MultiVectorRetriever에 이용."""
 
@@ -111,8 +137,19 @@ def _summarize_table_chain(table_context, prev_context="", after_context=""):
             | StrOutputParser())
 
     return chain.invoke({"element": table_context, "prev_context": prev_context, "after_context": after_context})
+##################################################################
 
+def _summarize_table_chain_with_dspy(table_context, prev_context="", after_context=""):        
+    all_context = prev_context+"\n"+table_context+"\n"+after_context
+
+    summarizer = dspy.ChainOfThought(BasicTableSummarize)
+    result = summarizer(text=all_context)
+    return result.summary
+
+###################################################################
 results = []
+results_dspy = []
+contexts = []
 
 ## docs var name to more specific ones
 for index, element in enumerate(docs):
@@ -129,11 +166,26 @@ for index, element in enumerate(docs):
             after_element = docs[index+1]
             context_after_table += _calculate_similarity_through_chunks(after_element, embedded_table_text)
 
-        task = _summarize_table_chain(prev_context=context_before_table, after_context=context_after_table, table_context=element.page_content,)
-        results.append(task)
+        full_context = context_before_table+"\n"+element.page_content+"\n"+context_after_table
 
+        task = _summarize_table_chain(prev_context=context_before_table, after_context=context_after_table, table_context=element.page_content)
+        task_dspy = _summarize_table_chain_with_dspy(prev_context=context_before_table, after_context=context_after_table, table_context=element.page_content)
+
+        results.append(task)
+        results_dspy.append(task_dspy)
+        contexts.append(full_context)
     # elif element.type == "text":
     #     task = self._summarize_text_chain(element.text)
     #     text_coroutine_tasks.append(task)
 
-print(results)
+import pickle
+# print(results)
+
+with(open(context_result_file_path, 'wb')) as f:
+    pickle.dump(contexts, f)
+with(open(langchain_result_file_path, 'wb')) as f:
+    pickle.dump(results, f)
+with(open(dspy_result_file_path, 'wb')) as f:
+    pickle.dump(results_dspy, f)
+
+print("end discussion")
