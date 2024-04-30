@@ -107,22 +107,60 @@ class BasicTableSummarize(dspy.Signature):
     summary = dspy.OutputField(desc="summarized text")
 
 ##########
-def _calculate_similarity_through_chunks(text_element, embedded_table:List[float], threshold:float=0.3):
-    """ Table Element 전체와 Text Element를 chunk 한 문장들과의 cosine 유사도를 구해서 threshold 이상이면 연관성이 존재한다고 판단, 더해준 다음 SummaryAgent에 전달 후 MultiVectorRetriever에 이용."""
+from typing import Dict, Literal, List
+import numpy as np
+from numpy import percentile, subtract, std
 
-    # input으로 들어온 text_chunk split해서 embed 한 후에 임시로 저장.
+# 유사도 검사를 위한 타입 정의
+BreakpointThresholdType = Literal["percentile", "standard_deviation", "interquartile"]
+BREAKPOINT_DEFAULTS: Dict[BreakpointThresholdType, float] = {
+    "percentile": 95,
+    "standard_deviation": 3,
+    "interquartile": 1.5,
+}
+
+def _calculate_similarity_through_chunks(
+        text_element, embedded_table: List[float], breakpoint_threshold_type: BreakpointThresholdType = "percentile", breakpoint_threshold: float = None):
+    """ Table Element 전체와 Text Element를 chunk 한 문장들과의 cosine 유사도를 구해서 threshold 이상이면 연관성이 존재한다고 판단,
+    더해준 다음 SummaryAgent에 전달 후 MultiVectorRetriever에 이용. 추가적으로 통계적 분석을 통해 문장 필터링 가능."""
+
+    # 옵션값 설정
+    if breakpoint_threshold is None:
+        breakpoint_threshold = BREAKPOINT_DEFAULTS[breakpoint_threshold_type]
+
+    # 입력 텍스트 분리 및 임베딩
     splitted_text_chunk = text_element.page_content.split("\n\n")
     embedded_text_chunk = embedding_model.embed_documents(texts=[text for text in splitted_text_chunk])
 
+    similarities = []
     result_context_to_insert = ""
-    ## table 전체 내용에 대해서 각각의 문장들에 대해 얼마나 유사한지 cosine 유사도 검색하고 해당하는 index에 존재하는 원본 chunk 더해서 Return
-    for index, embedded_text in enumerate(embedded_text_chunk):
+
+    # 유사도 계산
+    for embedded_text in embedded_text_chunk:
         similarity = cosine_similarity([embedded_text], embedded_table)[0][0]
-        print("Similarity :", similarity)
-        if similarity > threshold:
-            result_context_to_insert += splitted_text_chunk[index]+"\n"
+        similarities.append(similarity)
+
+    # 유사도 데이터를 array로 변환
+    similarity_array = np.array(similarities)
+    # 분석 기준값 계산
+    if breakpoint_threshold_type == "percentile":
+        breakpoint_value = percentile(similarity_array, breakpoint_threshold)
+    elif breakpoint_threshold_type == "standard_deviation":
+        mean_value = np.mean(similarity_array)
+        breakpoint_value = mean_value + std(similarity_array) * breakpoint_threshold
+    elif breakpoint_threshold_type == "interquartile":
+        iqr = subtract(*percentile(similarity_array, [75, 25]))
+        breakpoint_value = percentile(similarity_array, 75) + iqr * breakpoint_threshold
+
+    print(f"Breakpoint Value: {breakpoint_value}")
+
+    # 유사도가 분석 기준값 이상인 문장만 결과에 추가
+    for index, similarity in enumerate(similarities):
+        if similarity > breakpoint_value:
+            result_context_to_insert += splitted_text_chunk[index] + "\n"
 
     return result_context_to_insert
+
 
 
 #### 이 부분을 gather 해서 coroutine하도록 하는게 나을지도?
