@@ -74,7 +74,7 @@ class PDFHandler(BaseDocument):
         except Exception as e:
             print("Exception :", e)
 
-    
+
 if __name__ == "__main__":
     import time
     start_time = time.time()
