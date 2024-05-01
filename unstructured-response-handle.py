@@ -1,4 +1,4 @@
-from documenthandle import PDFHandler
+from documenthandle import APIPDFHandler
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
@@ -17,12 +17,12 @@ import os
 
 start_time = time.time()
 
-file_name = "example/sample_file.pdf"
-document_handler = PDFHandler(filename=file_name)
+file_path = "example/sample_file.pdf"
+document_handler = APIPDFHandler(file_path=file_path)
+response = document_handler.handle_document()
+# response = document_handler.load_cache(footer=)
 
-response = document_handler.load_cache()
-
-file_name_seperated = os.path.splitext(os.path.basename(file_name))[0]
+file_name_seperated = os.path.splitext(os.path.basename(file_path))[0]
 ### result table summary cache handle
 context_result_file_path = f"pkl/{file_name_seperated}_context.pkl"
 langchain_result_file_path = f"pkl/{file_name_seperated}_langchain_summary_results.pkl"
@@ -131,11 +131,9 @@ def _calculate_similarity_through_chunks(
     # 입력 텍스트 분리 및 임베딩
     splitted_text_chunk = text_element.page_content.split("\n\n")
     embedded_text_chunk = embedding_model.embed_documents(texts=[text for text in splitted_text_chunk])
-
     similarities = []
     result_context_to_insert = ""
 
-    # 유사도 계산
     for embedded_text in embedded_text_chunk:
         similarity = cosine_similarity([embedded_text], embedded_table)[0][0]
         similarities.append(similarity)
