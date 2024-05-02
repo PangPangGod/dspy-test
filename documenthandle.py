@@ -113,6 +113,10 @@ class APIPDFHandler(BaseDocument):
         except Exception as e:
             self.log_message(f"Exception occurred: {e}")
             return None
+        
+    def return_langchain_document(self):
+        """ TODO : GET response object and parse it to the langchain Document object(for Retrieval usage.) and returns it."""
+        pass
 
 
 if __name__ == "__main__":
