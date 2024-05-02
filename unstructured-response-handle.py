@@ -159,8 +159,6 @@ def _calculate_similarity_through_chunks(
 
     return result_context_to_insert
 
-
-
 #### 이 부분을 gather 해서 coroutine하도록 하는게 나을지도?
 #### cache화 해서 둘 다 테스트 해보는게 정답일듯 (dspy <-> langchain ainvoke)
 def _summarize_table_chain(table_context, prev_context="", after_context=""):
