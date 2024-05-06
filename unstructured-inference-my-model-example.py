@@ -9,6 +9,7 @@ import platform
 import json
 from unstructured_inference.models.base import UnstructuredModel
 from unstructured_inference.inference.layout import LayoutElement
+import unstructured
 
 class TATRTableDetectionModel(UnstructuredModel):
     def initialize(self):

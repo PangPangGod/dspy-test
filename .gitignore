@@ -3,6 +3,7 @@
 __pycache__
 
 example/sample_file.pdf
+example/to_test.pdf
 furniture_example
 ##
 blog
@@ -13,3 +14,4 @@ pkl
 .deepeval-cache.json
 
 model
+yolo
